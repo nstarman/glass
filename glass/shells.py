@@ -52,7 +52,7 @@ from .core.array import ndinterp
 
 # type checking
 from typing import (Union, Sequence, List, Tuple, Optional, Callable,
-                    TYPE_CHECKING)
+                    TYPE_CHECKING, NamedTuple)
 from numpy.typing import ArrayLike
 if TYPE_CHECKING:
     from cosmology import Cosmology
@@ -77,51 +77,55 @@ def density_weight(z: ArrayLike, cosmo: 'Cosmology') -> np.ndarray:
     return cosmo.rho_m_z(z)*cosmo.xm(z)**2/cosmo.ef(z)
 
 
-RadialWindow = namedtuple('RadialWindow', 'za, wa, zeff')
-RadialWindow.__doc__ = '''A radial window, defined by a window function.
+class RadialWindow(NamedTuple):
+  """A radial window, defined by a window function.
 
-    The radial window is defined by a window function in redshift, which
-    is given by a pair of arrays ``za``, ``wa``.
+  The radial window is defined by a window function in redshift, which
+  is given by a pair of arrays ``za``, ``wa``.
+  
+  The radial window also has an effective redshift, stored in the
+  ``zeff`` attribute, which should be a representative redshift for
+  the window function.
+  
+  To prevent accidental inconsistencies, instances of this type are
+  immutable (however, the array entries may **not** be immutable; do
+  not change them in place)::
+  
+      >>> from glass.shells import RadialWindow
+      >>> w1 = RadialWindow(..., ..., zeff=0.1)
+      >>> w1.zeff = 0.15
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      AttributeError: can't set attribute
+  
+  To create a new instance with a changed attribute value, use the
+  ``._replace`` method::
+  
+      >>> w1 = w1._replace(zeff=0.15)
+      >>> w1
+      RadialWindow(za=..., wa=..., zeff=0.15)
+  
+  Attributes
+  ----------
+  za : (N,) array_like
+      Redshift array; the abscissae of the window function.
+  wa : (N,) array_like
+      Weight array; the values (ordinates) of the window function.
+  zeff : float
+      Effective redshift of the window.
+  
+  Methods
+  -------
+  _replace
+  """
+  za: ArrayLike
+  '''Redshift array; the abscissae of the window function.'''
 
-    The radial window also has an effective redshift, stored in the
-    ``zeff`` attribute, which should be a representative redshift for
-    the window function.
+  wa: ArrayLike
+  '''Weight array; the values (ordinates) of the window function.'''
 
-    To prevent accidental inconsistencies, instances of this type are
-    immutable (however, the array entries may **not** be immutable; do
-    not change them in place)::
-
-        >>> from glass.shells import RadialWindow
-        >>> w1 = RadialWindow(..., ..., zeff=0.1)
-        >>> w1.zeff = 0.15
-        Traceback (most recent call last):
-          File "<stdin>", line 1, in <module>
-        AttributeError: can't set attribute
-
-    To create a new instance with a changed attribute value, use the
-    ``._replace`` method::
-
-        >>> w1 = w1._replace(zeff=0.15)
-        >>> w1
-        RadialWindow(za=..., wa=..., zeff=0.15)
-
-    Attributes
-    ----------
-    za : (N,) array_like
-        Redshift array; the abscissae of the window function.
-    wa : (N,) array_like
-        Weight array; the values (ordinates) of the window function.
-    zeff : float
-        Effective redshift of the window.
-
-    Methods
-    -------
-    _replace
-
-    '''
-RadialWindow.za.__doc__ = '''Redshift array; the abscissae of the window function.'''
-RadialWindow.wa.__doc__ = '''Weight array; the values (ordinates) of the window function.'''
-RadialWindow.zeff.__doc__ = '''Effective redshift of the window.'''
+  zeff: float
+  '''Effective redshift of the window.'''
 
 
 def tophat_windows(zbins: ArrayLike1D, dz: float = 1e-3,
